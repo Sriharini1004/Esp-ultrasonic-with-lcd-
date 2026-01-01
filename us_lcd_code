@@ -1,0 +1,71 @@
+
+#include <WiFi.h>
+#include <LiquidCrystal_I2C.h>
+#include "ThingSpeak.h"
+
+const int TRIG_PIN= 33;
+const int ECHO_PIN= 32;
+long duration,distance;
+LiquidCrystal_I2C lcd(0x27,16,2);
+const char* WIFI_NAME = "Wokwi-GUEST";
+const char* WIFI_PASSWORD = "";
+const int myChannelNumber = 3215167;
+const char* myApiKey = "HTDM5R51KBEKPEZ7";
+const char* server = "api.thingspeak.com";
+
+
+WiFiClient client;
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(TRIG_PIN, OUTPUT);
+  pinMode(ECHO_PIN, INPUT); 
+  lcd.init();
+  lcd.backlight();
+
+  WiFi.begin(WIFI_NAME, WIFI_PASSWORD);  //DEFAULT KEYWORDS
+  while (WiFi.status() != WL_CONNECTED)    // dEFAUKT KEYWORD 
+  {   
+    delay(1000);
+    Serial.println("Wifi not connected");
+  }
+  Serial.println("Wifi connected !");
+  Serial.println("Local IP: " + String(WiFi.localIP()));
+  WiFi.mode(WIFI_STA);
+  ThingSpeak.begin(client);
+}
+
+void loop() {
+  digitalWrite(TRIG_PIN, LOW);
+  delayMicroseconds(2);
+  digitalWrite(TRIG_PIN, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(TRIG_PIN, LOW);
+  duration = pulseIn(ECHO_PIN, HIGH);
+  distance = duration*0.034/2;
+  Serial.print("Distance: ");
+  Serial.println(distance);
+  lcd.setCursor(0,0);
+  lcd.print("Distance: ");
+  lcd.setCursor(0,1);
+  lcd.print(distance);
+  lcd.print(" cm");
+  delay(2);
+  ThingSpeak.setField(1, distance);
+  
+  
+  int x = ThingSpeak.writeFields(myChannelNumber,myApiKey);
+  
+  Serial.println("Distance: " + String(distance, 1) + "ppm");
+  
+  
+  if(distance<50){
+    Serial.println("object detected");
+   
+  }else{
+    Serial.println("object not detected");
+  }
+ 
+
+  delay(10000);
+}
